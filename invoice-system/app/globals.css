@@ -1,1 +1,112 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap");
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-ink-950 font-body;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-accent-dark;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
+           bg-accent text-white font-medium text-sm rounded-lg
+           hover:bg-accent-dark active:scale-[0.98]
+           transition-all duration-150 ease-out;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
+           bg-surface-raised text-ink-800 font-medium text-sm rounded-lg
+           border border-ink-200 hover:border-ink-300 hover:bg-ink-50
+           active:scale-[0.98] transition-all duration-150 ease-out;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2
+           text-ink-600 font-medium text-sm rounded-lg
+           hover:bg-ink-100 hover:text-ink-800
+           active:scale-[0.98] transition-all duration-150 ease-out;
+  }
+
+  .card {
+    @apply bg-surface-raised rounded-xl border border-ink-100 shadow-card;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-pending {
+    @apply badge bg-amber-50 text-amber-700 border border-amber-200;
+  }
+
+  .badge-paid {
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+
+  .badge-sent {
+    @apply badge bg-sky-50 text-sky-700 border border-sky-200;
+  }
+
+  .badge-draft {
+    @apply badge bg-ink-100 text-ink-600 border border-ink-200;
+  }
+
+  .badge-active {
+    @apply badge bg-violet-50 text-violet-700 border border-violet-200;
+  }
+
+  .badge-completed {
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-ink-200 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ink-300;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 1000px; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
