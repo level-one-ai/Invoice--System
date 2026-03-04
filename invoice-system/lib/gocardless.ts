@@ -11,7 +11,8 @@
 import GoCardless from "gocardless-nodejs";
 import { Environments } from "gocardless-nodejs/constants";
 
-let client: InstanceType<typeof GoCardless> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let client: any = null;
 
 export function getGoCardlessClient() {
   if (client) return client;
@@ -26,7 +27,7 @@ export function getGoCardlessClient() {
       ? Environments.Live
       : Environments.Sandbox;
 
-  client = new GoCardless(accessToken, environment);
+  client = new (GoCardless as any)(accessToken, environment);
   return client;
 }
 
