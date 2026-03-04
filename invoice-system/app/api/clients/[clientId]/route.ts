@@ -3,8 +3,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/firebase-admin";
-import type { Client, Milestone, MaintenanceSubscription, ClientWithMilestones } from "@/lib/types";
+import { getAdmin } from "../../../../lib/firebase-admin";
+import type { Client, Milestone, MaintenanceSubscription, ClientWithMilestones } from "../../../../lib/types";
 
 export async function GET(
   _request: NextRequest,
