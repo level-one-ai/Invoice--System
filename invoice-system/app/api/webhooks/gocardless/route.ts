@@ -31,10 +31,15 @@ function verifySignature(body: string, signature: string): boolean {
     .update(body)
     .digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(signature)
-  );
+  // Ensure both buffers are the same length before comparing
+  const computedBuf = Buffer.from(computed, "utf8");
+  const signatureBuf = Buffer.from(signature, "utf8");
+
+  if (computedBuf.length !== signatureBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(computedBuf, signatureBuf);
 }
 
 // ---------- Handler ----------
@@ -59,24 +64,62 @@ export async function POST(request: NextRequest) {
   for (const event of events) {
     try {
       switch (event.resource_type) {
-        // --- Mandate created (after first billing request flow completes) ---
+        // --- Billing request fulfilled (customer + mandate created via hosted flow) ---
+        case "billing_requests": {
+          if (event.action === "fulfilled") {
+            const billingRequestId = event.links.billing_request;
+            const customerId = event.links.customer;
+            const mandateId = event.links.mandate_request_mandate;
+
+            // Find the client by billingRequestId
+            const clientSnap = await db
+              .collection("clients")
+              .where("billingRequestId", "==", billingRequestId)
+              .limit(1)
+              .get();
+
+            if (!clientSnap.empty) {
+              const updateData: Record<string, string> = {
+                updatedAt: new Date().toISOString(),
+              };
+
+              if (customerId) {
+                updateData.gocardlessCustomerId = customerId;
+              }
+              if (mandateId) {
+                updateData.gocardlessMandateId = mandateId;
+              }
+
+              await clientSnap.docs[0].ref.update(updateData);
+              console.log(
+                `Billing request ${billingRequestId} fulfilled — customer: ${customerId}, mandate: ${mandateId}`
+              );
+            }
+          }
+          break;
+        }
+
+        // --- Mandate created/active (backup — in case billing_request event doesn't carry mandate) ---
         case "mandates": {
           if (event.action === "created" || event.action === "active") {
             const mandateId = event.links.mandate;
             const customerId = event.links.customer;
 
-            // Find the client by GoCardless customer ID and save the mandate
-            const clientSnap = await db
-              .collection("clients")
-              .where("gocardlessCustomerId", "==", customerId)
-              .limit(1)
-              .get();
+            if (customerId) {
+              // Find the client by GoCardless customer ID
+              const clientSnap = await db
+                .collection("clients")
+                .where("gocardlessCustomerId", "==", customerId)
+                .limit(1)
+                .get();
 
-            if (!clientSnap.empty) {
-              await clientSnap.docs[0].ref.update({
-                gocardlessMandateId: mandateId,
-                updatedAt: new Date().toISOString(),
-              });
+              if (!clientSnap.empty) {
+                await clientSnap.docs[0].ref.update({
+                  gocardlessMandateId: mandateId,
+                  updatedAt: new Date().toISOString(),
+                });
+                console.log(`Mandate ${mandateId} saved for customer ${customerId}`);
+              }
             }
           }
           break;
@@ -110,12 +153,10 @@ export async function POST(request: NextRequest) {
                 .where("clientId", "==", milestone.clientId)
                 .get();
 
-              const allPaid = allSnap.docs.every(
-                (d) => {
-                  const m = d.data() as Milestone;
-                  return m.id === milestone.id ? true : m.status === "paid";
-                }
-              );
+              const allPaid = allSnap.docs.every((d) => {
+                const m = d.data() as Milestone;
+                return m.id === milestone.id ? true : m.status === "paid";
+              });
 
               // If all milestones are paid, auto-activate maintenance subscription
               if (allPaid) {
@@ -132,8 +173,9 @@ export async function POST(request: NextRequest) {
               .get();
 
             if (!mSnap.empty) {
-              // You could send a notification here via Make.com
-              console.warn(`Payment ${paymentId} failed for milestone ${mSnap.docs[0].id}`);
+              console.warn(
+                `Payment ${paymentId} failed for milestone ${mSnap.docs[0].id}`
+              );
             }
           }
           break;
@@ -187,9 +229,16 @@ async function autoActivateMaintenance(
   clientId: string
 ) {
   const clientDoc = await db.collection("clients").doc(clientId).get();
+  if (!clientDoc.exists) return;
+
   const client = clientDoc.data() as Client;
 
-  if (!client.gocardlessMandateId) return;
+  if (!client.gocardlessMandateId) {
+    console.warn(
+      `Cannot activate maintenance for client ${clientId} — no mandate ID`
+    );
+    return;
+  }
 
   const subSnap = await db
     .collection("subscriptions")
