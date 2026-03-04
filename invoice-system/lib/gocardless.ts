@@ -5,13 +5,17 @@
 // Required env var: GOCARDLESS_ACCESS_TOKEN
 // Optional env var: GOCARDLESS_ENVIRONMENT ("sandbox" | "live")
 //
+// IMPORTANT: In live mode, GoCardless restricts direct creation
+// of customers/bank accounts/mandates. Everything must go through
+// the Billing Requests API + Billing Request Flow (hosted page).
+//
 // NOTE: You will also need a webhook endpoint so GoCardless can
 // notify you when payments succeed / fail. See /app/api/webhooks/gocardless/route.ts
 
-import GoCardless from "gocardless-nodejs";
-import { Environments } from "gocardless-nodejs/constants";
+/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any */
+const GoCardless = require("gocardless-nodejs");
+const { Environments } = require("gocardless-nodejs/constants");
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let client: any = null;
 
 export function getGoCardlessClient() {
@@ -27,43 +31,29 @@ export function getGoCardlessClient() {
       ? Environments.Live
       : Environments.Sandbox;
 
-  client = new (GoCardless as any)(accessToken, environment);
+  client = new GoCardless(accessToken, environment);
   return client;
 }
 
-// ----- Customer helpers -----
+// ----- Billing Request Flow (creates customer + mandate + first payment in one hosted page) -----
+// In live mode, GoCardless requires customers, bank accounts and mandates
+// to be created through the Billing Requests API — NOT via direct API calls.
+// This function creates everything in one flow that the customer completes
+// on GoCardless's hosted payment page.
 
-export async function createCustomer(params: {
+export async function createBillingRequestWithPayment(params: {
   email: string;
   givenName: string;
   familyName: string;
   companyName?: string;
-}) {
-  const gc = getGoCardlessClient();
-  // Split name into given/family if a single "name" is provided
-  const customer = await gc.customers.create({
-    email: params.email,
-    given_name: params.givenName,
-    family_name: params.familyName,
-    company_name: params.companyName || undefined,
-  });
-  return customer;
-}
-
-// ----- Billing Request Flow (for initial mandate + first payment) -----
-// GoCardless's Billing Request Flow lets a customer set up a
-// Direct Debit mandate and optionally make an instant payment
-// in the same hosted page.
-
-export async function createBillingRequestWithPayment(params: {
-  customerId: string;
   amount: number; // in pence / cents
   currency: string;
   description: string;
 }) {
   const gc = getGoCardlessClient();
 
-  // 1. Create a billing request (mandate + payment in one go)
+  // 1. Create a billing request — customer details are collected
+  //    as part of the flow (no separate customers.create() call needed)
   const billingRequest = await gc.billingRequests.create({
     mandate_request: {
       scheme: "bacs", // change to "sepa_core" for EUR, "ach" for USD, etc.
@@ -74,12 +64,10 @@ export async function createBillingRequestWithPayment(params: {
       currency: params.currency,
       description: params.description,
     },
-    links: {
-      customer: params.customerId,
-    },
   });
 
   // 2. Create a billing request flow (hosted page the customer visits)
+  //    Pre-fill customer details so they don't have to type them again
   const flow = await gc.billingRequestFlows.create({
     redirect_uri:
       process.env.GOCARDLESS_REDIRECT_URI ||
@@ -89,6 +77,12 @@ export async function createBillingRequestWithPayment(params: {
       "https://your-domain.com/payment/cancelled",
     links: {
       billing_request: billingRequest.id!,
+    },
+    prefilled_customer: {
+      email: params.email,
+      given_name: params.givenName,
+      family_name: params.familyName,
+      company_name: params.companyName || undefined,
     },
   });
 
