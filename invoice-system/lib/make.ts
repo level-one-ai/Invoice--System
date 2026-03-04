@@ -43,10 +43,14 @@ export async function sendInvoiceEmail(params: {
   currency: string;
   paymentUrl: string;
   invoiceType: "initial" | "milestone" | "maintenance";
+  sendInvoice?: boolean;
 }) {
   const webhookUrl = process.env.MAKE_WEBHOOK_SEND_INVOICE;
   if (!webhookUrl) {
     throw new Error("MAKE_WEBHOOK_SEND_INVOICE environment variable is not set.");
   }
-  return triggerMakeWebhook(webhookUrl, params);
+  return triggerMakeWebhook(webhookUrl, {
+    ...params,
+    sendInvoice: params.sendInvoice ?? true,
+  });
 }
