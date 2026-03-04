@@ -9,8 +9,9 @@ export interface Client {
   email: string;
   companyName: string;
   projectTitle: string;
-  gocardlessCustomerId: string; // GoCardless customer ID
-  gocardlessMandateId?: string; // GoCardless mandate ID (set after mandate is created)
+  gocardlessCustomerId: string; // GoCardless billing request ID (until customer is created via flow)
+  gocardlessMandateId?: string; // GoCardless mandate ID (set after mandate is created via webhook)
+  billingRequestId?: string; // GoCardless billing request ID
   status: "active" | "completed" | "archived";
   createdAt: string; // ISO date
   updatedAt: string;
