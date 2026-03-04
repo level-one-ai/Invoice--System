@@ -13,19 +13,19 @@
 // GET /api/clients — List all clients (for the dashboard)
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/firebase-admin";
+import { getAdmin } from "../../../lib/firebase-admin";
 import {
   createCustomer,
   createBillingRequestWithPayment,
-} from "@/lib/gocardless";
-import { sendInvoiceEmail } from "@/lib/make";
+} from "../../../lib/gocardless";
+import { sendInvoiceEmail } from "../../../lib/make";
 import type {
   ProposalWebhookPayload,
   Client,
   Milestone,
   ChecklistItem,
   MaintenanceSubscription,
-} from "@/lib/types";
+} from "../../../lib/types";
 
 // ---------- Helpers ----------
 
