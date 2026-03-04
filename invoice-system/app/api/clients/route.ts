@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
       currency: payload.initialInvoice.currency,
       paymentUrl: billingResult.paymentPageUrl!,
       invoiceType: "initial",
+      sendInvoice: true,
     });
 
     return NextResponse.json(
