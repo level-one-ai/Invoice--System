@@ -23,7 +23,7 @@ import {
   Zap,
   AlertCircle,
 } from "lucide-react";
-import type { ClientWithMilestones, Milestone } from "@/lib/types";
+import type { ClientWithMilestones, Milestone } from "../../../lib/types";
 
 export default function ClientDetailPage() {
   const params = useParams();
