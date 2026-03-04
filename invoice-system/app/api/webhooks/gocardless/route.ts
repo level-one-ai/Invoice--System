@@ -12,10 +12,10 @@
 //   GOCARDLESS_WEBHOOK_SECRET
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/firebase-admin";
+import { getAdmin } from "../../../../lib/firebase-admin";
 import crypto from "crypto";
-import type { Milestone, MaintenanceSubscription, Client } from "@/lib/types";
-import { createSubscription } from "@/lib/gocardless";
+import type { Milestone, MaintenanceSubscription, Client } from "../../../../lib/types";
+import { createSubscription } from "../../../../lib/gocardless";
 
 // ---------- Signature verification ----------
 
