@@ -16,7 +16,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import type { Client, DashboardStats } from "@/lib/types";
+import type { Client, DashboardStats } from "../../lib/types";
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<Client[]>([]);
