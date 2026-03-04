@@ -15,7 +15,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "../../../lib/firebase-admin";
 import {
-  createCustomer,
   createBillingRequestWithPayment,
 } from "../../../lib/gocardless";
 import { sendInvoiceEmail } from "../../../lib/make";
@@ -48,24 +47,23 @@ export async function POST(request: NextRequest) {
     const { db } = getAdmin();
     const now = new Date().toISOString();
 
-    // 1. Create GoCardless customer
+    // 1. Create billing request flow (customer + mandate + first payment all in one)
+    // In live mode, GoCardless requires everything to go through the Billing Requests API.
+    // Customer details are pre-filled so the client doesn't have to re-enter them.
     const { given, family } = splitName(payload.client.name);
-    const gcCustomer = await createCustomer({
+    const billingResult = await createBillingRequestWithPayment({
       email: payload.client.email,
       givenName: given,
       familyName: family,
       companyName: payload.client.companyName,
-    });
-
-    // 2. Create billing request flow (mandate setup + first payment)
-    const billingResult = await createBillingRequestWithPayment({
-      customerId: gcCustomer.id!,
       amount: payload.initialInvoice.amount,
       currency: payload.initialInvoice.currency,
       description: `${payload.projectTitle} — Initial deposit`,
     });
 
-    // 3. Save client in Firebase
+    // 2. Save client in Firebase
+    // Note: GoCardless customer ID will be available after the client completes
+    // the billing request flow — we'll capture it via the webhook.
     const clientId = generateId();
     const client: Client = {
       id: clientId,
@@ -73,7 +71,7 @@ export async function POST(request: NextRequest) {
       email: payload.client.email,
       companyName: payload.client.companyName,
       projectTitle: payload.projectTitle,
-      gocardlessCustomerId: gcCustomer.id!,
+      gocardlessCustomerId: billingResult.billingRequestId || "",
       status: "active",
       createdAt: now,
       updatedAt: now,
@@ -81,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     await db.collection("clients").doc(clientId).set(client);
 
-    // 4. Save initial invoice as milestone order=0
+    // 3. Save initial invoice as milestone order=0
     const initialMilestone: Milestone = {
       id: generateId(),
       clientId,
@@ -103,7 +101,7 @@ export async function POST(request: NextRequest) {
       .doc(initialMilestone.id)
       .set(initialMilestone);
 
-    // 5. Pre-generate future milestone invoices
+    // 4. Pre-generate future milestone invoices
     for (let i = 0; i < payload.milestones.length; i++) {
       const m = payload.milestones[i];
       const checklistItems: ChecklistItem[] = m.checklist.map((label) => ({
@@ -129,7 +127,7 @@ export async function POST(request: NextRequest) {
       await db.collection("milestones").doc(milestone.id).set(milestone);
     }
 
-    // 6. Save maintenance subscription record (pending — activates later)
+    // 5. Save maintenance subscription record (pending — activates later)
     const maintenance: MaintenanceSubscription = {
       id: generateId(),
       clientId,
@@ -145,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     await db.collection("subscriptions").doc(maintenance.id).set(maintenance);
 
-    // 7. Trigger Make.com to send the initial invoice email
+    // 6. Trigger Make.com to send the initial invoice email
     await sendInvoiceEmail({
       clientName: client.name,
       clientEmail: client.email,
@@ -164,7 +162,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           clientId,
-          gocardlessCustomerId: gcCustomer.id,
+          billingRequestId: billingResult.billingRequestId,
           paymentPageUrl: billingResult.paymentPageUrl,
         },
       },
