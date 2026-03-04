@@ -7,10 +7,10 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/firebase-admin";
-import { createPayment, createSubscription } from "@/lib/gocardless";
-import { sendInvoiceEmail } from "@/lib/make";
-import type { Milestone, Client, MaintenanceSubscription } from "@/lib/types";
+import { getAdmin } from "../../../lib/firebase-admin";
+import { createPayment, createSubscription } from "../../../lib/gocardless";
+import { sendInvoiceEmail } from "../../../lib/make";
+import type { Milestone, Client, MaintenanceSubscription } from "../../../lib/types";
 
 export async function POST(request: NextRequest) {
   try {
