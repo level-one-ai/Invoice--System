@@ -128,6 +128,7 @@ async function handleSendMilestone(body: {
     currency: milestone.currency,
     paymentUrl: `https://pay.gocardless.com/payments/${payment.id}`,
     invoiceType: "milestone",
+    sendInvoice: true,
   });
 
   return NextResponse.json({
