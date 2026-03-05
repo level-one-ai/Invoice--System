@@ -186,8 +186,8 @@ export default function ClientDetailPage() {
           className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-elevated text-sm font-medium
             animate-fadeIn ${
               notification.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                : "bg-red-50 text-red-800 border border-red-200"
+                ? "bg-emerald-950/50 text-emerald-400 border border-emerald-800/50"
+                : "bg-red-950/50 text-red-400 border border-red-800/50"
             }`}
         >
           {notification.message}
@@ -268,9 +268,9 @@ export default function ClientDetailPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex-shrink-0">
                         {milestone.status === "paid" ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         ) : milestone.status === "sent" ? (
-                          <Clock className="w-5 h-5 text-sky-500" />
+                          <Clock className="w-5 h-5 text-accent" />
                         ) : (
                           <Circle className="w-5 h-5 text-ink-300" />
                         )}
@@ -442,8 +442,8 @@ export default function ClientDetailPage() {
             <div className="card px-5 py-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-violet-600" />
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-accent" />
                   </div>
                   <div>
                     <p className="font-medium text-sm text-ink-900">
@@ -469,7 +469,7 @@ export default function ClientDetailPage() {
                 <div className="mt-4 p-3 bg-ink-50 rounded-lg">
                   {allMilestonesPaid ? (
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-emerald-700">
+                      <div className="flex items-center gap-2 text-sm text-emerald-400">
                         <Zap className="w-4 h-4" />
                         All milestones paid — ready to activate!
                       </div>
