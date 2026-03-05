@@ -85,28 +85,28 @@ export default function DashboardPage() {
             label="Total Clients"
             value={stats.totalClients}
             color="text-accent"
-            bg="bg-accent/8"
+            bg="bg-accent/10"
           />
           <StatCard
             icon={<FolderOpen className="w-5 h-5" />}
             label="Active Projects"
             value={stats.activeProjects}
-            color="text-violet-600"
-            bg="bg-violet-50"
+            color="text-accent-light"
+            bg="bg-accent/10"
           />
           <StatCard
             icon={<Clock className="w-5 h-5" />}
             label="Pending Invoices"
             value="—"
-            color="text-amber-600"
-            bg="bg-amber-50"
+            color="text-amber-400"
+            bg="bg-amber-950/30"
           />
           <StatCard
             icon={<TrendingUp className="w-5 h-5" />}
             label="Revenue"
             value="—"
-            color="text-emerald-600"
-            bg="bg-emerald-50"
+            color="text-emerald-400"
+            bg="bg-emerald-950/30"
           />
         </div>
 
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className="w-10 h-10 rounded-lg bg-accent/8 flex items-center
+                      className="w-10 h-10 rounded-lg bg-accent/10 flex items-center
                                     justify-center text-accent font-display text-lg"
                     >
                       {client.name.charAt(0)}
