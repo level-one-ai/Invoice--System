@@ -43,7 +43,48 @@ function splitName(fullName: string): { given: string; family: string } {
 
 export async function POST(request: NextRequest) {
   try {
-    const payload: ProposalWebhookPayload = await request.json();
+    let payload: ProposalWebhookPayload;
+
+    // Parse the request body — handle both direct JSON and string-wrapped JSON
+    const raw = await request.json();
+
+    // If the payload is a string (e.g. Make.com forwarded invoiceData as a string),
+    // parse it. Otherwise use it directly.
+    if (typeof raw === "string") {
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Invalid JSON string in request body" },
+          { status: 400 }
+        );
+      }
+    } else {
+      payload = raw;
+    }
+
+    // Validate required fields
+    const errors: string[] = [];
+    if (!payload.client?.name) errors.push("client.name is required");
+    if (!payload.client?.email) errors.push("client.email is required");
+    if (!payload.client?.companyName) errors.push("client.companyName is required");
+    if (!payload.projectTitle) errors.push("projectTitle is required");
+    if (!payload.initialInvoice?.amount) errors.push("initialInvoice.amount is required");
+    if (!payload.initialInvoice?.currency) errors.push("initialInvoice.currency is required");
+    if (!Array.isArray(payload.milestones)) errors.push("milestones must be an array");
+    if (!payload.maintenance?.amount) errors.push("maintenance.amount is required");
+    if (!payload.maintenance?.currency) errors.push("maintenance.currency is required");
+    if (!payload.maintenance?.months) errors.push("maintenance.months is required");
+
+    if (errors.length > 0) {
+      console.error("Validation failed:", errors);
+      console.error("Received payload:", JSON.stringify(payload, null, 2));
+      return NextResponse.json(
+        { success: false, error: "Validation failed", details: errors },
+        { status: 400 }
+      );
+    }
+
     const { db } = getAdmin();
     const now = new Date().toISOString();
 
