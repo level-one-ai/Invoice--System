@@ -45,11 +45,35 @@ export async function POST(request: NextRequest) {
   try {
     let payload: ProposalWebhookPayload;
 
-    // Parse the request body — handle both direct JSON and string-wrapped JSON
-    const raw = await request.json();
+    // Parse the request body — handle multiple formats Make.com might send
+    const contentType = request.headers.get("content-type") || "";
+    let raw: unknown;
 
-    // If the payload is a string (e.g. Make.com forwarded invoiceData as a string),
-    // parse it. Otherwise use it directly.
+    if (contentType.includes("application/json")) {
+      raw = await request.json();
+    } else {
+      // Make.com might send as text/plain or form-encoded
+      const text = await request.text();
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Could not parse request body as JSON",
+            receivedContentType: contentType,
+            bodyPreview: text.substring(0, 200),
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Handle various wrapper formats:
+    // 1. Direct payload: { client: {...}, ... }
+    // 2. String payload: '{"client":{...}}'
+    // 3. Wrapped in invoiceData: { invoiceData: '{"client":{...}}' }
+    // 4. Wrapped in invoiceData as object: { invoiceData: { client: {...}, ... } }
     if (typeof raw === "string") {
       try {
         payload = JSON.parse(raw);
@@ -59,28 +83,50 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    } else if (
+      raw &&
+      typeof raw === "object" &&
+      "invoiceData" in (raw as Record<string, unknown>)
+    ) {
+      const invoiceData = (raw as Record<string, unknown>).invoiceData;
+      if (typeof invoiceData === "string") {
+        try {
+          payload = JSON.parse(invoiceData);
+        } catch {
+          return NextResponse.json(
+            { success: false, error: "Invalid JSON in invoiceData field" },
+            { status: 400 }
+          );
+        }
+      } else {
+        payload = invoiceData as ProposalWebhookPayload;
+      }
     } else {
-      payload = raw;
+      payload = raw as ProposalWebhookPayload;
     }
 
     // Validate required fields
     const errors: string[] = [];
-    if (!payload.client?.name) errors.push("client.name is required");
-    if (!payload.client?.email) errors.push("client.email is required");
-    if (!payload.client?.companyName) errors.push("client.companyName is required");
-    if (!payload.projectTitle) errors.push("projectTitle is required");
-    if (!payload.initialInvoice?.amount) errors.push("initialInvoice.amount is required");
-    if (!payload.initialInvoice?.currency) errors.push("initialInvoice.currency is required");
-    if (!Array.isArray(payload.milestones)) errors.push("milestones must be an array");
-    if (!payload.maintenance?.amount) errors.push("maintenance.amount is required");
-    if (!payload.maintenance?.currency) errors.push("maintenance.currency is required");
-    if (!payload.maintenance?.months) errors.push("maintenance.months is required");
+    if (!payload?.client?.name) errors.push("client.name is required");
+    if (!payload?.client?.email) errors.push("client.email is required");
+    if (!payload?.client?.companyName) errors.push("client.companyName is required");
+    if (!payload?.projectTitle) errors.push("projectTitle is required");
+    if (!payload?.initialInvoice?.amount) errors.push("initialInvoice.amount is required");
+    if (!payload?.initialInvoice?.currency) errors.push("initialInvoice.currency is required");
+    if (!Array.isArray(payload?.milestones)) errors.push("milestones must be an array");
+    if (!payload?.maintenance?.amount) errors.push("maintenance.amount is required");
+    if (!payload?.maintenance?.currency) errors.push("maintenance.currency is required");
+    if (!payload?.maintenance?.months) errors.push("maintenance.months is required");
 
     if (errors.length > 0) {
-      console.error("Validation failed:", errors);
-      console.error("Received payload:", JSON.stringify(payload, null, 2));
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: errors },
+        {
+          success: false,
+          error: "Validation failed",
+          details: errors,
+          receivedType: typeof raw,
+          receivedKeys: raw && typeof raw === "object" ? Object.keys(raw as Record<string, unknown>) : null,
+        },
         { status: 400 }
       );
     }
