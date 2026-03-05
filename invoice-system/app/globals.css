@@ -15,15 +15,15 @@
   }
 
   ::selection {
-    @apply bg-accent/20 text-accent-dark;
+    @apply bg-accent/20 text-accent-light;
   }
 }
 
 @layer components {
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
-           bg-accent text-white font-medium text-sm rounded-lg
-           hover:bg-accent-dark active:scale-[0.98]
+           bg-accent text-black font-medium text-sm rounded-lg
+           hover:bg-accent-light active:scale-[0.98]
            transition-all duration-150 ease-out;
   }
 
@@ -42,7 +42,7 @@
   }
 
   .card {
-    @apply bg-surface-raised rounded-xl border border-ink-100 shadow-card;
+    @apply bg-surface-raised rounded-xl border border-ink-200 shadow-card;
   }
 
   .badge {
@@ -50,27 +50,27 @@
   }
 
   .badge-pending {
-    @apply badge bg-amber-50 text-amber-700 border border-amber-200;
+    @apply badge bg-amber-950/50 text-amber-400 border border-amber-800/50;
   }
 
   .badge-paid {
-    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+    @apply badge bg-emerald-950/50 text-emerald-400 border border-emerald-800/50;
   }
 
   .badge-sent {
-    @apply badge bg-sky-50 text-sky-700 border border-sky-200;
+    @apply badge bg-sky-950/50 text-sky-400 border border-sky-800/50;
   }
 
   .badge-draft {
-    @apply badge bg-ink-100 text-ink-600 border border-ink-200;
+    @apply badge bg-ink-100 text-ink-500 border border-ink-200;
   }
 
   .badge-active {
-    @apply badge bg-violet-50 text-violet-700 border border-violet-200;
+    @apply badge bg-accent/10 text-accent-light border border-accent/30;
   }
 
   .badge-completed {
-    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+    @apply badge bg-emerald-950/50 text-emerald-400 border border-emerald-800/50;
   }
 }
 
