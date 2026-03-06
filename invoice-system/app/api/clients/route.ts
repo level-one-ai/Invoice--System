@@ -18,6 +18,7 @@ import {
   createBillingRequestWithPayment,
 } from "../../../lib/gocardless";
 import { sendInvoiceEmail } from "../../../lib/make";
+import { updateCrmClientStage } from "../../../lib/crm-update";
 import type {
   ProposalWebhookPayload,
   Client,
@@ -244,6 +245,11 @@ export async function POST(request: NextRequest) {
       invoiceType: "initial",
       sendInvoice: true,
     });
+
+    // 7. Update CRM client stage to "Invoice Sent"
+    updateCrmClientStage(client.email, "Invoice Sent").catch(err =>
+      console.warn("CRM stage update (Invoice Sent) failed:", err)
+    );
 
     return NextResponse.json(
       {
