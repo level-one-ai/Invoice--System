@@ -16,6 +16,7 @@ import { getAdmin } from "../../../../lib/firebase-admin";
 import crypto from "crypto";
 import type { Milestone, MaintenanceSubscription, Client } from "../../../../lib/types";
 import { createSubscription } from "../../../../lib/gocardless";
+import { updateCrmClientStage } from "../../../../lib/crm-update";
 
 // ---------- Signature verification ----------
 
@@ -147,6 +148,17 @@ export async function POST(request: NextRequest) {
                 updatedAt: new Date().toISOString(),
               });
 
+              // Look up the client to get their email for CRM update
+              const clientDoc = await db.collection("clients").doc(milestone.clientId).get();
+              const clientData = clientDoc.exists ? (clientDoc.data() as Client) : null;
+
+              // Update CRM client stage to "Invoice Paid"
+              if (clientData?.email) {
+                updateCrmClientStage(clientData.email, "Invoice Paid").catch(err =>
+                  console.warn("CRM stage update (Invoice Paid) failed:", err)
+                );
+              }
+
               // Check if ALL milestones for this client are now paid
               const allSnap = await db
                 .collection("milestones")
@@ -161,6 +173,13 @@ export async function POST(request: NextRequest) {
               // If all milestones are paid, auto-activate maintenance subscription
               if (allPaid) {
                 await autoActivateMaintenance(db, milestone.clientId);
+
+                // Update CRM to "Completed"
+                if (clientData?.email) {
+                  updateCrmClientStage(clientData.email, "Completed").catch(err =>
+                    console.warn("CRM stage update (Completed) failed:", err)
+                  );
+                }
               }
             }
           }
